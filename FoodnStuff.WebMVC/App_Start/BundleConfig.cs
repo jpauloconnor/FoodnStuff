@@ -24,6 +24,7 @@ namespace FoodnStuff.WebMVC
 
             bundles.Add(new StyleBundle("~/Content/css").Include(
                       "~/Content/bootstrap.css",
+                      "~/Content/css/PagedList.css",
                       "~/Content/site.css"));
         }
     }

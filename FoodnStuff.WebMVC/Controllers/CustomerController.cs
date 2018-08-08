@@ -7,6 +7,7 @@ using System.Net;
 using System.Web;
 using System.Web.Mvc;
 using FoodnStuff.WebMVC.Models;
+using PagedList;
 
 namespace FoodnStuff.WebMVC.Controllers
 {
@@ -16,9 +17,48 @@ namespace FoodnStuff.WebMVC.Controllers
         private ApplicationDbContext db = new ApplicationDbContext();
 
         // GET: Customer
-        public ActionResult Index()
+        public ActionResult Index(string sortOrder, string currentFilter, string searchString, int? page)
         {
-            return View(db.Customers.ToList());
+            ViewBag.CurrentSort = sortOrder;
+            ViewBag.FirstNameSortParam = String.IsNullOrEmpty(sortOrder) ? "first_desc" : "";
+            ViewBag.LastNameSortParam = String.IsNullOrEmpty(sortOrder) ? "last_desc" : "";
+
+            if (searchString != null)
+            {
+                page = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+
+            ViewBag.CurrentFilter = searchString;
+
+            var customers = from c in db.Customers
+                            select c;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                customers = customers.Where(s => s.LastName.Contains(searchString)
+                                       || s.FirstName.Contains(searchString));
+            }
+
+            switch (sortOrder)
+            {
+                case "first_desc":
+                    customers = customers.OrderByDescending(c => c.FirstName);
+                    break;
+                case "last_desc":
+                    customers = customers.OrderByDescending(c => c.LastName);
+                    break;
+                default:
+                    customers = customers.OrderBy(s => s.LastName);
+                    break;
+            }
+
+            int pageSize = 3;
+            int pageNumber = (page ?? 1);
+            return View(customers.ToPagedList(pageNumber, pageSize));
         }
 
         // GET: Customer/Details/5

@@ -7,6 +7,7 @@ using System.Net;
 using System.Web;
 using System.Web.Mvc;
 using FoodnStuff.WebMVC.Models;
+using PagedList;
 
 namespace FoodnStuff.WebMVC.Controllers
 {
@@ -16,11 +17,48 @@ namespace FoodnStuff.WebMVC.Controllers
         private ApplicationDbContext db = new ApplicationDbContext();
 
         // GET: Product
-        public ActionResult Index()
+        public ActionResult Index(string sortOrder, string currentFilter, string searchString, int? page)
         {
-            return View(db.Products.ToList());
+            ViewBag.CurrentSort = sortOrder;
+            ViewBag.ProductNameSort = String.IsNullOrEmpty(sortOrder) ? "product_name" : "";
+            ViewBag.UPCSort = String.IsNullOrEmpty(sortOrder) ? "upc_desc" : "";
+
+            if (searchString != null)
+                page = 1;
+            else
+                searchString = currentFilter;
+
+            ViewBag.CurrentFilter = searchString;
+
+            var products = from p in db.Products
+                            select p;
+
+            if (!String.IsNullOrEmpty(searchString))
+            {
+                products = products.Where(p => p.ProductName.Contains(searchString)
+                                       || p.UPC.ToString().Contains(searchString));
+            }
+
+            switch (sortOrder)
+            {
+                case "product_name":
+                    products = products.OrderByDescending(p => p.ProductName);
+                    break;
+                case "upc_desc":
+                    products = products.OrderByDescending(p => p.UPC);
+                    break;
+                default:
+                    products = products.OrderByDescending(p => p.ProductName);
+                    break;
+            }
+
+            int pageSize = 10;
+            int pageNumber = (page ?? 1);
+            return View(products.ToPagedList(pageNumber, pageSize));
         }
 
+
+        
         // GET: Product/Details/5
         public ActionResult Details(int? id)
         {
